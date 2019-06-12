@@ -11,20 +11,12 @@ var cur_team_index_front = 0;
 var cur_team_index_back = 4;
 
 
-var global_player_infos =1 ;
-var global_player_full_infos = 2;
-var global_team_infos =1 ;
-var global_team_full_infos =2 ;
+var global_player_infos;
+var global_team_infos;
 //alert('f');
 //==============================. 함수 정의. =================================
 function getIndex(target){
 
-var cur_team_index_front = 0;
-var cur_team_index_back = 4;
-
-//alert('f');
-//==============================. 함수 정의. =================================
-function getIndex(target){
 	var targetR = target.parent();
 	//alert ('? : ' + $('#team_img_list li').eq(0).html());
 	for(var i = 0; i < ('#team_img_list li').length; i++){
@@ -117,7 +109,6 @@ function imgSlide(x_pos_diff, diff, to){
 
 				$('.team_img').eq(cur_team_index_front - 1).css({opacity : 1.0}); //나오는 이미지는 fadeIn처리
 			}
-			}	
 			cur_team_index_front -= 1;
 		}
 		var target_team_name = team_list.PremierLeague[cur_team_index_front + 2];
@@ -144,16 +135,127 @@ function isExistence(object){   //객체존재여부 반환하는 함수
 		return false;
 }
 
+function drawGraph(name, labels_names, labels_datas){
+	var canvas = $('#stat_canvas');
+	
+	Chart.defaults.global.defaultFontFamily = "Lato";
+	Chart.defaults.global.defaultFontSize = 18;
+			
+	var marksData = {
+		labels: labels_names,
+		datasets: [{
+			label: name,
+			backgroundColor: "rgba(244, 123, 315, 0.3)",
+			borderColor: "rgba(200,0,0,0.6)",
+			fill: true,
+			radius: 6,
+			pointRadius: 0,  //포인트 크기조절
+			pointBorderWidth: 3,
+			pointBackgroundColor: "orange",
+			pointBorderColor: "rgba(200,0,0,0.6)",
+			pointHoverRadius: 10,
+			data: labels_datas
+		}]
+	};
+			
+	var chartOptions = {
+		scale: {
+			gridLines: {
+				color: "black",
+				lineWidth: 1
+			},
+			angleLines: {
+				display: false
+			},
+			ticks: {
+				beginAtZero: true,
+				min: 0,
+				max: 100,
+				stepSize: 20
+			},
+				pointLabels: {
+				fontSize: 18,
+				fontColor: "green"
+			}
+		},
+			legend: {
+				position: 'right'
+			},
+			maintainAspectRatio: false,
+			animationEnabled: true,
+			animationEasing: 'easeInOutQuart',
+			animationSteps: 10
+		};
+		
+			var radarChart = new Chart(canvas, {
+			type: 'radar',
+			data: marksData,
+			options: chartOptions,
+		});
+}
 
+function calcGraph (stat_list) {
+	$.ajaxSetup({ async: false });
+	$.ajax({
+		type:'GET',
+		url:'/player/' + '*',
+			success : function(player_infos) {
+				result_data_set = {"GK":[0,0,0,0,0], "DF":[0,0,0,0,0], "MF":[0,0,0,0,0], "FW":[0,0,0,0,0]};
+				global_player_full_infos = player_infos;
+				//alert(global_player_full_infos.length);
+				$.each(global_player_full_infos, function(index, player_info) {
+					//sum = sum + player_info.stat_list[index];
+					if (player_info.position == "Goalkeeper") {
+						
+						result_data_set["GK"][0] += Number(player_info.Saves.replace(',', ''));
+						result_data_set["GK"][1] += Number(player_info.Saves.replace(',', ''));
+						result_data_set["GK"][2] += Number(player_info.Penalties_saved.replace(',', ''));
+						result_data_set["GK"][3] += Number(player_info.High_Claims.replace(',', ''));
+						result_data_set["GK"][4] += Number(player_info.Goal_kicks.replace(',', ''));
+					}
+					else if (player_info.position == "Defender") {
+						result_data_set["DF"][1] += Number(player_info.Aerial_battles_lost.replace(',', ''));
+						result_data_set["DF"][1] += Number(player_info.Tackles.replace(',', ''));
+						result_data_set["DF"][2] += Number(player_info.Accurate_long_ball.replace(',', ''));
+						result_data_set["DF"][3] += Number(player_info.Interceptions.replace(',', ''));
+						result_data_set["DF"][4] += Number(player_info.Passes.replace(',', ''));
+					}
+					else if (player_info.position == "Midfielder") {
+						result_data_set["MF"][1] += Number(player_info.Saves.replace(',', ''));
+						result_data_set["MF"][2] += Number(player_info.Penalties_saved.replace(',', ''));
+						result_data_set["MF"][3] += Number(player_info.High_Claims.replace(',', ''));
+						result_data_set["MF"][4] += Number(player_info.Goal_kicks.replace(',', ''));
+					}
+					else if (player_info.position == "Forward") {
+						result_data_set["FW"][1] += Number(player_info.Saves.replace(',', ''));
+						result_data_set["FW"][2] += Number(player_info.Penalties_saved.replace(',', ''));
+						result_data_set["FW"][3] += Number(player_info.High_Claims.replace(',', ''));
+						result_data_set["FW"][4] += Number(player_info.Goal_kicks.replace(',', ''));
+					}
+				})
+
+				alert(result_data_set["GK"][0]);
+			}
+		});
+		
+		$.ajax({
+			type:'GET',
+			url:'/team/' + team_name,
+			success : function(team_infos) {
+				global_team_full_infos = team_infos;
+			}
+
+
+		});
+	$.ajaxSetup({ async: true });
+	
+		
+	
+}
 
 //============================================= 시작 부분 ===============================================================
 
-
-
-//============================================= 시작 부분 =============================================
-
 $(document).ready(function() {
-	alert('1');
 
 	//==============================. 데이터 전처리. =================================
 
@@ -181,8 +283,7 @@ $(document).ready(function() {
 			var first_setting = highLight(team_list.PremierLeague[2]);
 			$('#team_content_3').prepend($(first_setting));
 		});
-	
-	calcGraph();
+
 	//------------------. team_img 부분 음영처리 ------------------
 	hideAll( $('.team_img') );
 	var img_list = $('#team_img_list li');
@@ -192,38 +293,11 @@ $(document).ready(function() {
 	var cur_midle_offset = $(img_list[2]).offset().left;
 	var diff_offset = des_offset - cur_midle_offset;
 	//alert()
-	//alert(Math.abs(diff_offset));
+	alert(Math.abs(diff_offset));
 	 
-	// $('#team_img_list').css({"margin-left": Math.abs(diff_offset) - 1});
+	 $('#team_img_list').css({"margin-left": Math.abs(diff_offset) +100});
 
-	//------------------. json파일 import. ------------------
-	$.getJSON('/data/cup_list.json', function(data){
-		cup_list = data;
-		$('.cup_image').attr({src :'/images/cup_icon/' + cup_list.cup[0].logo_file});
-		$('#cup_pg_bar_1').animate({width: cup_list.cup[0].speed + '%'});
-		$('#cup_pg_bar_2').animate({width: cup_list.cup[0].build + '%'});
-		$('#cup_pg_bar_3').animate({width: cup_list.cup[0].skill + '%'});
-	});
-
-	//------------------. team_list 이미지 적용. ------------------
-	$.ajaxSetup({ async: false });
-	$.getJSON('/data/team_list.json', function(data){
-		team_list = data;
-		team_list_reversed = $(team_list.PremierLeague).get().reverse();  //미리 데이터 로딩
-		$(team_list_reversed).each(function(index, data){
-			var next = '<li><img class="team_img" src="' + strToSrc('/images/club_icon/epl/', data, 'png') + '" > </li>';  //이미지 파일 로드
-			$('#team_img_list').prepend($(next));
-
-		})
-		$('.team_img').eq(2).attr({id : 'team_img_middle'});  //중간 요소 크기조정
-
-		var first_setting = highLight(team_list.PremierLeague[2]);
-		$('#team_content_3').prepend($(first_setting));
-	});
-
-	//------------------. team_img 부분 음영처리 ------------------
-	hideAll( $('.team_img') );
-
+	
 
 	$.ajaxSetup({ async: true });
 	//==============================. 스크롤 시. =================================
@@ -259,6 +333,7 @@ $(document).ready(function() {
 				var menu_name_game = $('.menu_items').toArray()[4];
 				$(menu_name_game).attr({id : 'menu_bar_fixed_clicked'})
 			}
+			
 		//----------------.  about section 부분 li 색변경. ----------------
 		} else if( chkScrLoc('#team', -300) ){
 			cur_section = 3;
@@ -296,12 +371,12 @@ $(document).ready(function() {
 				$(menu_name_game).attr({id : 'menu_bar_fixed_clicked'})
 			}
 		}
+	});
 
 	//==============================. 메뉴 클릭 시 애니메이션. =================================
 	$('.menu_items').click(function(event){
 		event.preventDefault();
 		$('html,body').animate({scrollTop:$(this.hash).offset().top}, 700);
-		$('html,body').animate({scrollTop:$(this.hash).offset().top}, 500);
 	});
 
 	//=============================  cup_list에서 화살표 클릭시 리그 정보 변경. =================================
@@ -346,7 +421,7 @@ $(document).ready(function() {
 	$('#team_select').change(function() {
 		var select_name = $(this).children('option:selected').text();
 		$(this).siblings('label').text(select_name);
-		$(this).siblings('label').text(select_name);
+		
 	})
 
 	//=============================  team_list에서 슬라이드 구현. =================================
@@ -356,11 +431,6 @@ $(document).ready(function() {
 		var last_li = $('#team_img_list li').eq(4 + cur_team_index_front);
 		var last_img = $('.team_img').eq(4 + cur_team_index_front);
 		var x_pos_diff = $( $('#team_img_list li').eq(1 + cur_team_index_front) ).position().left - $(first_img_list).position().left; //150.5
-		//alert(x_pos_diff);
-		var first_img = $('.team_img').eq(0 + cur_team_index_front);
-		var last_li = $('#team_img_list li').eq(4 + cur_team_index_front);
-		var last_img = $('.team_img').eq(4 + cur_team_index_front);
-		var x_pos_diff = $( $('.team_img').eq(1 + cur_team_index_front) ).position().left - $(first_img).position().left; //150.5
 		//alert(x_pos_diff);
 		var clicked_index = getIndex($(event.target));
 		var middle_index = 2+cur_team_index_front
@@ -373,19 +443,15 @@ $(document).ready(function() {
 			imgSlide(x_pos_diff , index_diff, 'L');
 		}
 		else{ //가운데 클릭
-
-			
 			$('#team_modal').css({visibility:"visible"});
 			$('#team_modal_content').css({visibility: "visible"});
-			$('#team_modal_content').addClass('modal_come_in');
+			$('#team_modal_content').addClass('modal_come_in'); 
 
 			$('.team_button').css('visibility', 'visible');
 			$('.player_button').css('visibility', 'visible');
 
 			var team_name = $('#team_content_3 h3').text();
 			$('#pop_up_title').text(team_name.toUpperCase());
-
-			$.ajaxSetup({ async: false });
 			$.ajax({
 				type:'GET',
 				url:'/player/' + team_name,
@@ -405,7 +471,7 @@ $(document).ready(function() {
 					global_player_infos = player_infos;
 				}
 			});
-			
+
 			$.ajax({
 				type:'GET',
 				url:'/team/' + team_name,
@@ -413,6 +479,7 @@ $(document).ready(function() {
 					var html_add = '';
 					//$('team_stat span')[0].text(team_infos[0].name);
 					var team_stat_list = $('.team_stat');
+					
 					//alert(team_infos[0].name);
 					$(team_stat_list[0]).children(':eq(1)').text(team_infos[0].matches_played);
 					$(team_stat_list[1]).children(':eq(1)').text(team_infos[0].goals);
@@ -422,6 +489,7 @@ $(document).ready(function() {
 					global_team_infos = team_infos;
 				}
 			});
+			
 			$.ajaxSetup({ async: true });
 			
 			alert(global_team_infos[0].Shots);
@@ -431,11 +499,8 @@ $(document).ready(function() {
 			draw_graph(team_name, ["Shots", "Passes/match", "Clearance", "Chemist", "Saves"],
 					[global_team_infos[0].Shots,
 					global_team_infos[0].Passes_per_match,70,57,60]);
-			
 		}
 	});
-
-
 
 	$(window).resize(function () {
 		hideAll( $('.team_img') );
@@ -445,14 +510,10 @@ $(document).ready(function() {
 		var des_offset = cur_window_width/2 ;
 		var cur_midle_offset = $(img_list[2]).offset().left - $(img_list[0]).height()/2;
 		var diff_offset = des_offset - cur_midle_offset - $(img_list[2]).css('width') / 2;
-		alert(diff_offset);
-		$('#team_img_list').css({"margin-left":diff_offset+200});
+		
+		$('#team_img_list').css({"margin-left":diff_offset + 300});
 	})
 
-
-	$('.players').click(function (){
-		alert('click!!');
-	});
 	//=============================  팝업창 동작 구현. =================================
 
 	//----------------.  team_list 불러오기 . ----------------
@@ -511,19 +572,8 @@ $(document).ready(function() {
 		$('#team_modal_content').css('visibility', "hidden");
 		$('#team_modal').css('visibility', "hidden");
 	});
-			var modal = $('#team_modal');
-			modal.css({display: "block"});
-			modal.addClass('modal_come_in');
-		}
-	});
 
-	//----------------.  팝업창 디자인. ----------------
 
-	$('.close').click(function(){
-		$('#team_modal').css({display : "none"});
-	});
 
-	$('#team_modal').click(function(){
-		$('#team_modal').css({display : "none"});
-	});
-	
+
+});	
